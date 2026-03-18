@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { MessageCircle, BookOpen, Heart, Headphones, Wind, Sparkles } from "lucide-react";
-import logo from "figma:asset/95ad626bb4833deaee31cb223ecc7bc04bd398fa.png";
+import logo from "../../assets/95ad626bb4833deaee31cb223ecc7bc04bd398fa.png";
 
 const features = [
   {

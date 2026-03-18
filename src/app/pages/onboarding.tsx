@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Heart, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import logo from "figma:asset/95ad626bb4833deaee31cb223ecc7bc04bd398fa.png";
+import logo from "../../assets/95ad626bb4833deaee31cb223ecc7bc04bd398fa.png";
 
 type OnboardingStep = 1 | 2 | 3 | 4;
 type AuthMode = "login" | "signup";
