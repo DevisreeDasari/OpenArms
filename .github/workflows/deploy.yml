@@ -32,6 +32,8 @@ jobs:
         run: npm ci
 
       - name: Build
+        env:
+          VITE_API_BASE: https://openarms-9alt.onrender.com
         run: npm run build
 
       - name: Upload artifact
