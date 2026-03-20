@@ -1,7 +1,9 @@
-import { Outlet, Link, useLocation } from "react-router-dom";
-import { MessageCircle, BookOpen, Heart, Headphones, Wind, Sparkles, Menu, X } from "lucide-react";
-import { useState } from "react";
+import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
+import { MessageCircle, BookOpen, Heart, Headphones, Wind, Sparkles, Menu, X, Settings as SettingsIcon, LogOut } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import logo from "../../assets/95ad626bb4833deaee31cb223ecc7bc04bd398fa.png";
+import { clearToken, setGuestMode } from "../services/authStore";
+import { clearGuestChats, clearGuestJournals } from "../services/guestStorage";
 
 const navItems = [
   { path: "/", icon: Heart, label: "Home" },
@@ -15,7 +17,33 @@ const navItems = [
 
 export function Layout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const desktopProfileMenuRef = useRef<HTMLDivElement | null>(null);
+  const mobileProfileMenuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const onMouseDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (desktopProfileMenuRef.current && desktopProfileMenuRef.current.contains(target)) return;
+      if (mobileProfileMenuRef.current && mobileProfileMenuRef.current.contains(target)) return;
+      setProfileMenuOpen(false);
+    };
+
+    document.addEventListener("mousedown", onMouseDown);
+    return () => document.removeEventListener("mousedown", onMouseDown);
+  }, []);
+
+  const handleLogout = () => {
+    clearToken();
+    setGuestMode(false);
+    clearGuestJournals();
+    clearGuestChats();
+    setProfileMenuOpen(false);
+    setMobileMenuOpen(false);
+    navigate("/onboarding");
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
@@ -50,15 +78,82 @@ export function Layout() {
                   </Link>
                 );
               })}
+
+              <div className="relative ml-2" ref={desktopProfileMenuRef}>
+                <button
+                  onClick={() => setProfileMenuOpen((v) => !v)}
+                  className="w-10 h-10 rounded-full bg-white border border-purple-100 hover:bg-purple-50 transition-all flex items-center justify-center overflow-hidden"
+                  aria-label="Account menu"
+                >
+                  <img src={logo} alt="Profile" className="w-8 h-8 object-contain" />
+                </button>
+
+                {profileMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl border border-purple-100 shadow-lg overflow-hidden">
+                    <button
+                      onClick={() => {
+                        setProfileMenuOpen(false);
+                        navigate("/settings");
+                      }}
+                      className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-purple-50 flex items-center gap-2"
+                    >
+                      <SettingsIcon className="w-4 h-4" />
+                      Settings
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-purple-50 flex items-center gap-2"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
             </nav>
 
             {/* Mobile Menu Button */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg hover:bg-purple-50"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
+            <div className="md:hidden flex items-center gap-2" ref={mobileProfileMenuRef}>
+              <button
+                onClick={() => setProfileMenuOpen((v) => !v)}
+                className="w-10 h-10 rounded-full bg-white border border-purple-100 hover:bg-purple-50 transition-all flex items-center justify-center overflow-hidden"
+                aria-label="Account menu"
+              >
+                <img src={logo} alt="Profile" className="w-8 h-8 object-contain" />
+              </button>
+
+              {profileMenuOpen && (
+                <div className="absolute right-4 top-16 mt-2 w-52 bg-white rounded-xl border border-purple-100 shadow-lg overflow-hidden">
+                  <button
+                    onClick={() => {
+                      setProfileMenuOpen(false);
+                      navigate("/settings");
+                    }}
+                    className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-purple-50 flex items-center gap-2"
+                  >
+                    <SettingsIcon className="w-4 h-4" />
+                    Settings
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-purple-50 flex items-center gap-2"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </button>
+                </div>
+              )}
+
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(!mobileMenuOpen);
+                  setProfileMenuOpen(false);
+                }}
+                className="p-2 rounded-lg hover:bg-purple-50"
+              >
+                {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -85,6 +180,23 @@ export function Layout() {
                   </Link>
                 );
               })}
+
+              <Link
+                to="/settings"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-gray-700 hover:bg-purple-50"
+              >
+                <SettingsIcon className="w-5 h-5" />
+                <span>Settings</span>
+              </Link>
+
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-gray-700 hover:bg-purple-50"
+              >
+                <LogOut className="w-5 h-5" />
+                <span>Logout</span>
+              </button>
             </nav>
           </div>
         )}

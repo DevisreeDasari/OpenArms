@@ -1,5 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { Send, Bot, User } from "lucide-react";
+import { apiRequest } from "../services/apiClient";
+import { getToken } from "../services/authStore";
+import { loadGuestChats, saveGuestChats, type GuestChatMessage } from "../services/guestStorage";
 
 type Message = {
   id: string;
@@ -42,7 +45,43 @@ export function Therapist() {
     scrollToBottom();
   }, [messages, isTyping]);
 
-  const handleSend = () => {
+  useEffect(() => {
+    const token = getToken();
+    if (token) {
+      apiRequest<{ messages: { role: "system" | "user" | "assistant"; message: string; created_at: string }[] }>("/chat", {
+        method: "GET",
+        token,
+      })
+        .then((res) => {
+          const mapped: Message[] = res.messages
+            .filter((m) => m.role === "user" || m.role === "assistant")
+            .map((m, idx) => ({
+              id: `db-${idx}-${m.created_at}`,
+              role: m.role as "user" | "assistant",
+              content: m.message,
+              timestamp: new Date(m.created_at),
+            }));
+          setMessages([initialMessage, ...mapped]);
+        })
+        .catch(() => {
+          setMessages([initialMessage]);
+        });
+      return;
+    }
+
+    const guest = loadGuestChats();
+    if (guest.length > 0) {
+      const mapped: Message[] = guest.map((m) => ({
+        id: m.id,
+        role: m.role,
+        content: m.content,
+        timestamp: new Date(m.timestamp),
+      }));
+      setMessages([initialMessage, ...mapped]);
+    }
+  }, []);
+
+  const handleSend = async () => {
     if (!input.trim()) return;
 
     const userMessage: Message = {
@@ -56,18 +95,61 @@ export function Therapist() {
     setInput("");
     setIsTyping(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+    const token = getToken();
+    if (!token) {
+      const current = loadGuestChats();
+      const next: GuestChatMessage[] = [
+        ...current,
+        { id: userMessage.id, role: "user", content: userMessage.content, timestamp: userMessage.timestamp.toISOString() },
+      ];
+      saveGuestChats(next);
+
+      setTimeout(() => {
+        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: randomResponse,
+          timestamp: new Date(),
+        };
+
+        setMessages((prev) => [...prev, assistantMessage]);
+        const after = loadGuestChats();
+        saveGuestChats([
+          ...after,
+          { id: assistantMessage.id, role: "assistant", content: assistantMessage.content, timestamp: assistantMessage.timestamp.toISOString() },
+        ]);
+        setIsTyping(false);
+      }, 1000 + Math.random() * 1000);
+
+      return;
+    }
+
+    try {
+      const res = await apiRequest<{ reply: string }>("/chat", {
+        method: "POST",
+        token,
+        body: { message: userMessage.content },
+      });
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: randomResponse,
+        content: res.reply,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, assistantMessage]);
+    } catch (err: any) {
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: err?.message || "Failed to get response",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, assistantMessage]);
+    } finally {
       setIsTyping(false);
-    }, 1000 + Math.random() * 1000);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
