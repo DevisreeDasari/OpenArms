@@ -152,8 +152,16 @@ function requireVerifiedEmail() {
   return String(process.env.AUTH_REQUIRE_VERIFIED || "false").toLowerCase() === "true";
 }
 
+function googleOnlyMode() {
+  return String(process.env.AUTH_GOOGLE_ONLY || "false").toLowerCase() === "true";
+}
+
 export async function register(req, res, next) {
   try {
+    if (googleOnlyMode()) {
+      return res.status(403).json({ error: "Email/password signup is disabled. Please continue with Google." });
+    }
+
     const body = registerSchema.parse(req.body);
 
     const existing = await findUserByEmail(body.email);
@@ -219,6 +227,10 @@ export async function register(req, res, next) {
 
 export async function login(req, res, next) {
   try {
+    if (googleOnlyMode()) {
+      return res.status(403).json({ error: "Email/password login is disabled. Please continue with Google." });
+    }
+
     const body = loginSchema.parse(req.body);
 
     const user = await findUserByEmail(body.email);
@@ -244,6 +256,10 @@ export async function login(req, res, next) {
 
 export async function verifyEmail(req, res, next) {
   try {
+    if (googleOnlyMode()) {
+      return res.status(403).json({ error: "Email verification is disabled. Please continue with Google." });
+    }
+
     const body = verifyEmailSchema.parse(req.body);
     const tokenHash = sha256(body.token);
 
@@ -261,6 +277,10 @@ export async function verifyEmail(req, res, next) {
 
 export async function forgotPassword(req, res, next) {
   try {
+    if (googleOnlyMode()) {
+      return res.status(403).json({ error: "Password reset is disabled. Please continue with Google." });
+    }
+
     const body = forgotPasswordSchema.parse(req.body);
     const user = await findUserByEmail(body.email);
 
@@ -286,6 +306,10 @@ export async function forgotPassword(req, res, next) {
 
 export async function resetPassword(req, res, next) {
   try {
+    if (googleOnlyMode()) {
+      return res.status(403).json({ error: "Password reset is disabled. Please continue with Google." });
+    }
+
     const body = resetPasswordSchema.parse(req.body);
     const tokenHash = sha256(body.token);
     const passwordHash = await bcrypt.hash(body.newPassword, 10);

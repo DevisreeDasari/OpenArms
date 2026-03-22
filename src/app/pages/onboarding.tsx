@@ -33,6 +33,7 @@ const goals = [
 
 export function Onboarding() {
   const navigate = useNavigate();
+  const googleOnly = String(import.meta.env.VITE_GOOGLE_ONLY || "false").toLowerCase() === "true";
   const [step, setStep] = useState<OnboardingStep>(2);
   const [authMode, setAuthMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
@@ -48,7 +49,7 @@ export function Onboarding() {
 
   useEffect(() => {
     const w = window as any;
-    const clientId = (import.meta as any)?.env?.VITE_GOOGLE_CLIENT_ID as string | undefined;
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
     if (!clientId) return;
     if (!w.google?.accounts?.id) return;
     if (!googleBtnRef.current) return;
@@ -206,71 +207,73 @@ export function Onboarding() {
                 <p className="text-slate-500">Sign in to continue your journey</p>
               </div>
 
-              {/* Toggle */}
-              <div className="bg-slate-100 rounded-full p-1 flex">
-                <button
-                  onClick={() => setAuthMode("login")}
-                  className={`flex-1 py-3 rounded-full font-medium transition-all ${
-                    authMode === "login"
-                      ? "bg-white text-slate-800 shadow-sm"
-                      : "text-slate-600"
-                  }`}
-                >
-                  Login
-                </button>
-                <button
-                  onClick={() => setAuthMode("signup")}
-                  className={`flex-1 py-3 rounded-full font-medium transition-all ${
-                    authMode === "signup"
-                      ? "bg-white text-slate-800 shadow-sm"
-                      : "text-slate-600"
-                  }`}
-                >
-                  Sign Up
-                </button>
-              </div>
+              {!googleOnly && (
+                <>
+                  {/* Toggle */}
+                  <div className="bg-slate-100 rounded-full p-1 flex">
+                    <button
+                      onClick={() => setAuthMode("login")}
+                      className={`flex-1 py-3 rounded-full font-medium transition-all ${
+                        authMode === "login"
+                          ? "bg-white text-slate-800 shadow-sm"
+                          : "text-slate-600"
+                      }`}
+                    >
+                      Login
+                    </button>
+                    <button
+                      onClick={() => setAuthMode("signup")}
+                      className={`flex-1 py-3 rounded-full font-medium transition-all ${
+                        authMode === "signup"
+                          ? "bg-white text-slate-800 shadow-sm"
+                          : "text-slate-600"
+                      }`}
+                    >
+                      Sign Up
+                    </button>
+                  </div>
 
-              {/* Form Fields */}
-              <div className="space-y-4 pt-2">
-                <input
-                  type="email"
-                  placeholder="Email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent transition-all"
-                />
-                <input
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent transition-all"
-                />
+                  {/* Form Fields */}
+                  <div className="space-y-4 pt-2">
+                    <input
+                      type="email"
+                      placeholder="Email address"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent transition-all"
+                    />
+                    <input
+                      type="password"
+                      placeholder="Password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent transition-all"
+                    />
 
-                {authMode === "login" && (
+                    {authMode === "login" && (
+                      <button
+                        onClick={() => navigate("/forgot-password")}
+                        className="w-full text-right text-sm text-slate-500 hover:text-slate-700 transition-colors"
+                        type="button"
+                      >
+                        Forgot password?
+                      </button>
+                    )}
+                  </div>
+
+                  {authInfo && <div className="text-sm text-green-700 text-center">{authInfo}</div>}
+                  {authError && <div className="text-sm text-red-600 text-center">{authError}</div>}
+
+                  {/* Continue Button */}
                   <button
-                    onClick={() => navigate("/forgot-password")}
-                    className="w-full text-right text-sm text-slate-500 hover:text-slate-700 transition-colors"
-                    type="button"
+                    onClick={handleAuthContinue}
+                    disabled={!email.trim() || !password.trim() || isAuthLoading}
+                    className="w-full bg-gradient-to-r from-purple-400 to-blue-400 text-white py-4 rounded-full font-medium text-lg shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95"
                   >
-                    Forgot password?
+                    {isAuthLoading ? "Please wait..." : authMode === "login" ? "Login" : "Sign Up"}
                   </button>
-                )}
-              </div>
-
-              {authInfo && <div className="text-sm text-green-700 text-center">{authInfo}</div>}
-              {authError && (
-                <div className="text-sm text-red-600 text-center">{authError}</div>
+                </>
               )}
-
-              {/* Continue Button */}
-              <button
-                onClick={handleAuthContinue}
-                disabled={!email.trim() || !password.trim() || isAuthLoading}
-                className="w-full bg-gradient-to-r from-purple-400 to-blue-400 text-white py-4 rounded-full font-medium text-lg shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95"
-              >
-                {isAuthLoading ? "Please wait..." : authMode === "login" ? "Login" : "Sign Up"}
-              </button>
 
               {/* Divider */}
               <div className="relative">
