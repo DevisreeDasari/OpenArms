@@ -1,6 +1,7 @@
 import dns from "dns";
 import pg from "pg";
 import dotenv from "dotenv";
+import { URL } from "url";
 
 const { Pool } = pg;
 
@@ -14,6 +15,18 @@ if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL is required");
 }
 
+const databaseUrl = new URL(process.env.DATABASE_URL);
+const dbHostname = databaseUrl.hostname;
+
+let dbHostAddr;
+try {
+  const lookedUp = await dns.promises.lookup(dbHostname, { family: 4 });
+  dbHostAddr = lookedUp?.address;
+} catch {
+  dbHostAddr = undefined;
+}
+
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  ...(dbHostAddr ? { hostaddr: dbHostAddr } : {}),
 });
