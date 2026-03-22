@@ -125,7 +125,50 @@ async function sendEmailViaResend({ to, subject, text }) {
   }
 }
 
+async function sendEmailViaBrevo({ to, subject, text }) {
+  const apiKey = process.env.BREVO_API_KEY;
+  if (!apiKey) {
+    const err = new Error("BREVO_API_KEY not configured");
+    err.statusCode = 500;
+    throw err;
+  }
+
+  const from = process.env.EMAIL_FROM;
+  if (!from) {
+    const err = new Error("EMAIL_FROM not configured");
+    err.statusCode = 500;
+    throw err;
+  }
+
+  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "api-key": apiKey,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      sender: { email: from.includes("<") ? from.split("<").pop()?.replace(">", "").trim() : from },
+      to: [{ email: to }],
+      subject,
+      textContent: text,
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    const err = new Error(`Brevo error (${res.status}): ${body || res.statusText}`);
+    err.statusCode = 500;
+    throw err;
+  }
+}
+
 async function sendEmail({ to, subject, text }) {
+  if (process.env.BREVO_API_KEY) {
+    await sendEmailViaBrevo({ to, subject, text });
+    return;
+  }
+
   if (process.env.RESEND_API_KEY) {
     await sendEmailViaResend({ to, subject, text });
     return;
