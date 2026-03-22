@@ -18,13 +18,12 @@ if (!process.env.DATABASE_URL) {
 const databaseUrl = new URL(process.env.DATABASE_URL);
 const dbHostname = databaseUrl.hostname;
 
-let dbHostAddr;
-try {
-  const lookedUp = await dns.promises.lookup(dbHostname, { family: 4 });
-  dbHostAddr = lookedUp?.address;
-} catch {
-  dbHostAddr = undefined;
+const lookedUpAll = await dns.promises.lookup(dbHostname, { all: true });
+const ipv4Record = lookedUpAll.find((r) => r.family === 4);
+if (!ipv4Record?.address) {
+  throw new Error(`No IPv4 address found for DB host: ${dbHostname}`);
 }
+const dbHostAddr = ipv4Record.address;
 
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
