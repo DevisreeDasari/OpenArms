@@ -135,7 +135,7 @@ export function Onboarding() {
       navigate(missing ? "/complete-profile" : "/");
     } catch (err: any) {
       if (authMode === "signup" && String(err?.message || "").toLowerCase().includes("email already in use")) {
-        setAuthInfo("Verification pending. Please check your email for the verification link.");
+        setAuthInfo("User already exists. Please log in.");
         setAuthMode("login");
       } else {
         setAuthError(err?.message || "Authentication failed");
