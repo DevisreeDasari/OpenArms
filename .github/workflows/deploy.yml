@@ -34,7 +34,6 @@ jobs:
       - name: Build
         env:
           VITE_API_BASE: https://openarms-9alt.onrender.com
-          VITE_GOOGLE_ONLY: true
         run: npm run build
 
       - name: Upload artifact

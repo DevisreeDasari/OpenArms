@@ -244,7 +244,24 @@ export async function login(req, res, next) {
     }
 
     if (requireVerifiedEmail() && !user.is_verified) {
-      return res.status(403).json({ error: "Please verify your email before logging in" });
+      const rawToken = crypto.randomBytes(32).toString("hex");
+      const tokenHash = sha256(rawToken);
+      const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24);
+      await setEmailVerificationToken({ userId: user.id, tokenHash, expiresAt });
+
+      const verifyUrl = `${getAppBaseUrl()}#/verify-email?token=${encodeURIComponent(rawToken)}`;
+      sendEmail({
+        to: user.email,
+        subject: "Verify your email",
+        text: `Verify your email by opening this link: ${verifyUrl}`,
+      }).catch((err) => {
+        // eslint-disable-next-line no-console
+        console.error("[backend] failed to send verification email:", err);
+      });
+
+      return res.status(403).json({
+        error: "Please verify your email before logging in. A new verification email has been sent.",
+      });
     }
 
     const token = signToken({ id: user.id, email: user.email });
