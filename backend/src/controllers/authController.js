@@ -94,7 +94,7 @@ async function sendEmail({ to, subject, text }) {
   try {
     await transporter.sendMail({ from, to, subject, text });
   } catch (e) {
-    const err = new Error("Failed to send email");
+    const err = new Error(`Failed to send email: ${e?.message || String(e)}`);
     err.statusCode = 500;
     throw err;
   }
