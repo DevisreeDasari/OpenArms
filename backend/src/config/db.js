@@ -18,6 +18,14 @@ if (!process.env.DATABASE_URL) {
 const databaseUrl = new URL(process.env.DATABASE_URL);
 const dbHostname = databaseUrl.hostname;
 
+// Let the explicit `ssl` Pool option control TLS behavior.
+// Some environments surface "self-signed certificate in certificate chain" when
+// `sslmode` in the connection string triggers stricter verification.
+databaseUrl.searchParams.delete("sslmode");
+databaseUrl.searchParams.delete("sslrootcert");
+databaseUrl.searchParams.delete("sslcert");
+databaseUrl.searchParams.delete("sslkey");
+
 let dbHostAddr;
 try {
   const lookedUpAll = await dns.promises.lookup(dbHostname, { all: true });
@@ -34,7 +42,7 @@ try {
 const shouldDisableTlsVerify = dbHostname.endsWith(".pooler.supabase.com") || dbHostname.endsWith(".supabase.co");
 
 export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: databaseUrl.toString(),
   ...(dbHostAddr ? { hostaddr: dbHostAddr } : {}),
   ...(shouldDisableTlsVerify
     ? {
