@@ -88,7 +88,49 @@ function createTransport() {
   });
 }
 
+async function sendEmailViaResend({ to, subject, text }) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    const err = new Error("RESEND_API_KEY not configured");
+    err.statusCode = 500;
+    throw err;
+  }
+
+  const from = process.env.EMAIL_FROM;
+  if (!from) {
+    const err = new Error("EMAIL_FROM not configured");
+    err.statusCode = 500;
+    throw err;
+  }
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from,
+      to,
+      subject,
+      text,
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    const err = new Error(`Resend error (${res.status}): ${body || res.statusText}`);
+    err.statusCode = 500;
+    throw err;
+  }
+}
+
 async function sendEmail({ to, subject, text }) {
+  if (process.env.RESEND_API_KEY) {
+    await sendEmailViaResend({ to, subject, text });
+    return;
+  }
+
   const transporter = createTransport();
   if (!transporter) {
     const err = new Error("Email service not configured");
