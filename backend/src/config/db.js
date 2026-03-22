@@ -31,7 +31,16 @@ try {
   dbHostAddr = undefined;
 }
 
+const shouldDisableTlsVerify = dbHostname.endsWith(".pooler.supabase.com") || dbHostname.endsWith(".supabase.co");
+
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ...(dbHostAddr ? { hostaddr: dbHostAddr } : {}),
+  ...(shouldDisableTlsVerify
+    ? {
+        ssl: {
+          rejectUnauthorized: false,
+        },
+      }
+    : {}),
 });
