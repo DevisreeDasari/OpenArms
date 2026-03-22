@@ -76,6 +76,9 @@ function createTransport() {
   return nodemailer.createTransport({
     service: "gmail",
     auth: { user, pass },
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 20_000,
   });
 }
 
@@ -114,10 +117,13 @@ export async function register(req, res, next) {
         await setEmailVerificationToken({ userId: existing.id, tokenHash, expiresAt });
 
         const verifyUrl = `${getAppBaseUrl()}#/verify-email?token=${encodeURIComponent(rawToken)}`;
-        await sendEmail({
+        sendEmail({
           to: body.email,
           subject: "Verify your email",
           text: `Verify your email by opening this link: ${verifyUrl}`,
+        }).catch((err) => {
+          // eslint-disable-next-line no-console
+          console.error("[backend] failed to send verification email:", err);
         });
 
         return res.status(200).json({
@@ -138,10 +144,13 @@ export async function register(req, res, next) {
     await setEmailVerificationToken({ userId: user.id, tokenHash, expiresAt });
 
     const verifyUrl = `${getAppBaseUrl()}#/verify-email?token=${encodeURIComponent(rawToken)}`;
-    await sendEmail({
+    sendEmail({
       to: body.email,
       subject: "Verify your email",
       text: `Verify your email by opening this link: ${verifyUrl}`,
+    }).catch((err) => {
+      // eslint-disable-next-line no-console
+      console.error("[backend] failed to send verification email:", err);
     });
 
     if (requireVerifiedEmail()) {
