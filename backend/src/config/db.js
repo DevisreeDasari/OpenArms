@@ -18,12 +18,18 @@ if (!process.env.DATABASE_URL) {
 const databaseUrl = new URL(process.env.DATABASE_URL);
 const dbHostname = databaseUrl.hostname;
 
-const lookedUpAll = await dns.promises.lookup(dbHostname, { all: true });
-const ipv4Record = lookedUpAll.find((r) => r.family === 4);
-if (!ipv4Record?.address) {
-  throw new Error(`No IPv4 address found for DB host: ${dbHostname}`);
+let dbHostAddr;
+try {
+  const lookedUpAll = await dns.promises.lookup(dbHostname, { all: true });
+  const ipv4Record = lookedUpAll.find((r) => r.family === 4);
+  dbHostAddr = ipv4Record?.address;
+  if (!dbHostAddr) {
+    // eslint-disable-next-line no-console
+    console.warn(`[backend] no IPv4 found for DB host; falling back to default resolution: ${dbHostname}`);
+  }
+} catch {
+  dbHostAddr = undefined;
 }
-const dbHostAddr = ipv4Record.address;
 
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
